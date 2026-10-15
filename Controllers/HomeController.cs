@@ -1,8 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
-using WebApplication1.Models;
+using Microsoft.AspNetCore.Mvc;
+using TestSignalR.Models;
 
-namespace WebApplication1.Controllers
+namespace TestSignalR.Controllers
 {
     public class HomeController : Controller
     {

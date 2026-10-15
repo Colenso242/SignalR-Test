@@ -1,6 +1,6 @@
-﻿using WebApplication1.Models.Enum;
+﻿using TestSignalR.Models.Enum;
 
-namespace WebApplication1.Models;
+namespace TestSignalR.Models;
 
 public record Order(int Id, string UserId, string Product, OrderStatusEnum Status, DateTimeOffset UpdatedAt)
 {

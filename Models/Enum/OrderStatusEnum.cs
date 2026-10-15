@@ -1,4 +1,4 @@
-﻿namespace WebApplication1.Models.Enum;
+﻿namespace TestSignalR.Models.Enum;
 
 public enum OrderStatusEnum
 {
