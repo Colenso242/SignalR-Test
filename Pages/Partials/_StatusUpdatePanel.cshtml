@@ -1,0 +1,14 @@
+@model TestSignalR.ViewModels.StatusUpdatePanelViewModel
+
+<fieldset>
+    <legend>3. Update status</legend>
+    Order <input id="updateOrderId" type="number" value="@Model.DefaultOrderId" min="1" style="width: 5rem" />
+    <select id="newStatus">
+        @foreach (var status in Model.Statuses)
+        {
+            <option>@status</option>
+        }
+    </select>
+    <button id="invokeBtn" disabled>Via hub (invoke)</button>
+    <button id="restBtn" disabled>Via REST (IHubContext)</button>
+</fieldset>

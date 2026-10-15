@@ -1,0 +1,17 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Order Notifications";
+}
+
+<h1>Order Notifications</h1>
+
+<partial name="Partials/_ConnectionPanel" model="Model.Connection" />
+<partial name="Partials/_GroupPanel" model="Model.Group" />
+<partial name="Partials/_StatusUpdatePanel" model="Model.StatusUpdate" />
+<partial name="Partials/_OrdersTable" />
+<partial name="Partials/_EventLog" />
+
+@section Scripts {
+    <script src="~/js/app.js" asp-append-version="true"></script>
+}

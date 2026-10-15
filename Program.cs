@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IOrderService,OrderService>();
 
@@ -26,9 +27,12 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 
+// niente default per controller: "/" va alla Razor Page Pages/Index, la vista MVC resta su /Home
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller}/{action=Index}/{id?}")
+    .WithStaticAssets();
+app.MapRazorPages()
     .WithStaticAssets();
 app.UseStaticFiles();
 

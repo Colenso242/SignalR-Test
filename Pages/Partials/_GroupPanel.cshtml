@@ -1,0 +1,8 @@
+@model TestSignalR.ViewModels.GroupPanelViewModel
+
+<fieldset>
+    <legend>2. Watch an order (group subscription)</legend>
+    <input id="groupOrderId" type="number" value="@Model.DefaultOrderId" min="1" style="width: 5rem" />
+    <button id="joinBtn" disabled>Join group</button>
+    <button id="leaveBtn" disabled>Leave group</button>
+</fieldset>

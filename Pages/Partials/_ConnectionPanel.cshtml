@@ -1,0 +1,9 @@
+@model TestSignalR.ViewModels.ConnectionPanelViewModel
+
+<fieldset>
+    <legend>1. Sign in &amp; connect</legend>
+    <input id="userName" value="@Model.DefaultUserName" placeholder="user" />
+    <button id="startBtn">Sign in &amp; start</button>
+    <button id="stopBtn" disabled>Stop</button>
+    &nbsp; Connection: <span id="status">Disconnected</span>
+</fieldset>

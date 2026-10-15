@@ -17,10 +17,23 @@ public class OrderService(IHubContext<OrderNotificationHub, IOrderNotificationCl
         }.ToDictionary(o => o.Id));
     public IReadOnlyList<Order> GetAll() => _orders.OrderBy(o => o.Key).Select(o => o.Value).ToList();
 
+    public IReadOnlyList<Order> GetForUser(string userId) =>
+        _orders.Values.Where(o => o.UserId == userId).OrderBy(o => o.Id).ToList();
+
     public Order GetOrder(int orderId) => _orders.GetValueOrDefault(orderId, Order.None);
 
-    public Task UpdateOrderStatus(Order order)
+    public async Task<Order> UpdateOrderStatus(int orderId, OrderStatusEnum status)
     {
-        throw new NotImplementedException();
+        if (!_orders.TryGetValue(orderId, out var existing))
+            return Order.None;
+
+        var updated = existing with { Status = status, UpdatedAt = DateTimeOffset.UtcNow };
+        _orders[orderId] = updated;
+
+        //owner notificato su tutte le sue connessioni, chi osserva l'ordine tramite il gruppo
+        await hubContext.Clients.User(updated.UserId).OrderStatusUpdated(updated);
+        await hubContext.Clients.Group(OrderNotificationHub.OrderGroup(orderId)).OrderStatusUpdated(updated);
+
+        return updated;
     }
 }
