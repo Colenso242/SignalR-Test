@@ -1,12 +1,16 @@
+using System.Text.Json.Serialization;
 using TestSignalR.Hubs;
 using TestSignalR.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+// enum come stringhe ("Shipped") sia per le API che per SignalR, così il JS può usare i nomi
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddRazorPages();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSingleton<IOrderService,OrderService>();
 
 var app = builder.Build();
