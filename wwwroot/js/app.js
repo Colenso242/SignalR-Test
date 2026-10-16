@@ -4,6 +4,7 @@ const $ = (id) => document.getElementById(id);
 const orders = new Map();
 let connection = null;
 let currentUserId = null;
+let accessToken = null;
 
 function log(message) {
     const line = document.createElement('div');
@@ -40,8 +41,14 @@ function upsertOrder(order) {
     renderOrders(order.id);
 }
 
-async function fetchJson(url, options) {
-    const response = await fetch(url, options);
+async function fetchJson(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+    });
     if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
     return response.status === 204 ? null : response.json();
 }
@@ -54,17 +61,17 @@ async function loadMyOrders() {
 
 //Connect/Disconnect
 async function start() {
-    // il cookie di login viene inviato anche alla negotiate/websocket di SignalR
-    const { userId } = await fetchJson('/api/auth/login', {
+    const { accessToken: token, userId } = await fetchJson('/api/auth/token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userName: $('userName').value }),
     });
+    accessToken = token;
     currentUserId = userId;
     log(`Signed in as ${userId}`);
 
+    // SignalR manda il token come header nella negotiate e come ?access_token= sul WebSocket
     connection = new signalR.HubConnectionBuilder()
-        .withUrl('/orderNotification')
+        .withUrl('/orderNotification', { accessTokenFactory: () => accessToken })
         .withAutomaticReconnect()
         .configureLogging(signalR.LogLevel.Warning)
         .build();
@@ -96,8 +103,9 @@ async function start() {
 
 async function stop() {
     await connection.stop();
-    await fetchJson('/api/auth/logout', { method: 'POST' });
+    //JWT è stateless, non serve il logout lato server
     log(`Signed out ${currentUserId}`);
+    accessToken = null;
     currentUserId = null;
     orders.clear();
     renderOrders();
@@ -146,7 +154,6 @@ $('restBtn').onclick = () => run(async () => {
     //PUT normale: la notifica SignalR arriva comunque da OrderService tramite IHubContext
     const order = await fetchJson(`/api/orders/${Number($('updateOrderId').value)}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: $('newStatus').value }),
     });
     log(`Updated via REST #${order.id} → ${order.status}`);

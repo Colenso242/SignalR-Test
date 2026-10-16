@@ -1,36 +1,33 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using TestSignalR.Models;
 
 namespace TestSignalR.Controllers;
 
-// login, solo nome utente
+// emette un JWT per qualsiasi nome utente, solo per demo: in produzione serve un vero identity provider
 [ApiController]
 [Route("api/auth")]
-public class AuthController : ControllerBase
+public class AuthController(IConfiguration configuration) : ControllerBase
 {
-    [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequest request)
+    [HttpPost("token")]
+    public IActionResult Token(TokenRequest request)
     {
-        var userId = request.UserName?.Trim();
+        var userId = request.UserName.Trim();
         if (string.IsNullOrEmpty(userId))
             return BadRequest("User name is required.");
 
-        //NameIdentifier è il claim che SignalR usa come UserIdentifier(per Client.UserId)
-        var identity = new ClaimsIdentity(
-            [new Claim(ClaimTypes.NameIdentifier, userId), new Claim(ClaimTypes.Name, userId)],
-            CookieAuthenticationDefaults.AuthenticationScheme);
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+        var jwt = configuration.GetSection("Jwt");
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
+        var token = new JwtSecurityToken(
+            issuer: jwt["Issuer"],
+            audience: jwt["Audience"],
+            claims: [new Claim(JwtRegisteredClaimNames.Sub, userId), new Claim(ClaimTypes.Name, userId)],
+            expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256));
 
-        return Ok(new { userId });
-    }
-
-    [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
-    {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return NoContent();
+        return Ok(new { accessToken = new JwtSecurityTokenHandler().WriteToken(token), userId });
     }
 }

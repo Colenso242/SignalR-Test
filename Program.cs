@@ -1,6 +1,10 @@
+using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.IdentityModel.Tokens;
 using TestSignalR.Hubs;
+using TestSignalR.Infrastructure;
 using TestSignalR.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,11 +17,31 @@ builder.Services.AddRazorPages();
 builder.Services.AddSignalR()
     .AddJsonProtocol(o => o.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddSingleton<IOrderService,OrderService>();
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(o =>
+builder.Services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
+
+var jwt = builder.Configuration.GetSection("Jwt");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(o =>
     {
-        o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
-        o.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
+        o.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidIssuer = jwt["Issuer"],
+            ValidAudience = jwt["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!)),
+        };
+
+        // il browser non può mettere header sulle richieste WebSocket/SSE:
+        // il client SignalR manda il token come ?access_token=..., lo accetto solo per l'hub
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var accessToken = ctx.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken) && ctx.HttpContext.Request.Path.StartsWithSegments("/orderNotification"))
+                    ctx.Token = accessToken;
+                return Task.CompletedTask;
+            },
+        };
     });
 
 var app = builder.Build();
