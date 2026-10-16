@@ -3,6 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const orders = new Map();
 let connection = null;
+let currentUserId = null;
 
 function log(message) {
     const line = document.createElement('div');
@@ -34,13 +35,36 @@ function renderOrders(highlightId) {
     $('orders').replaceChildren(...rows);
 }
 
+// la tabella mostra solo i miei ordini: quelli osservati via gruppo finiscono solo nel log
 function upsertOrder(order) {
+    if (order.userId !== currentUserId) return;
     orders.set(order.id, order);
     renderOrders(order.id);
 }
 
+async function fetchJson(url, options) {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
+    return response.status === 204 ? null : response.json();
+}
+
+async function loadMyOrders() {
+    orders.clear();
+    for (const order of await fetchJson('/api/orders/mine')) orders.set(order.id, order);
+    renderOrders();
+}
+
 //Connect/Disconnect
 async function start() {
+    // il cookie di login viene inviato anche alla negotiate/websocket di SignalR
+    const { userId } = await fetchJson('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: $('userName').value }),
+    });
+    currentUserId = userId;
+    log(`Signed in as ${userId}`);
+
     connection = new signalR.HubConnectionBuilder()
         .withUrl('/orderNotification')
         .withAutomaticReconnect()
@@ -54,7 +78,11 @@ async function start() {
     connection.on('SystemMessage', (message) => log(`SystemMessage: ${message}`));
 
     connection.onreconnecting(() => setStatus('Reconnecting…'));
-    connection.onreconnected(() => setStatus('Connected'));
+    connection.onreconnected(() => {
+        setStatus('Connected');
+        // durante la disconnessione posso aver perso degli aggiornamenti
+        run(loadMyOrders);
+    });
     connection.onclose(() => {
         connection = null;
         setStatus('Disconnected');
@@ -65,11 +93,15 @@ async function start() {
     setStatus('Connected');
     log('Connected to /orderNotification');
 
-    // se ho tempo aggiungo login, per ora carico tutto via API call
-    const response = await fetch('/api/orders');
-    if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
+    await loadMyOrders();
+}
+
+async function stop() {
+    await connection.stop();
+    await fetchJson('/api/auth/logout', { method: 'POST' });
+    log(`Signed out ${currentUserId}`);
+    currentUserId = null;
     orders.clear();
-    for (const order of await response.json()) orders.set(order.id, order);
     renderOrders();
 }
 
@@ -86,7 +118,7 @@ async function run(action) {
 }
 
 $('startBtn').onclick = () => run(start);
-$('stopBtn').onclick = () => run(() => connection.stop());
+$('stopBtn').onclick = () => run(stop);
 
 //Watch order
 
@@ -108,6 +140,7 @@ $('invokeBtn').onclick = () => run(async () => {
         orderId: Number($('updateOrderId').value),
         status: $('newStatus').value,
     });
+    log(`Updated #${order.id} → ${order.status}`);
     upsertOrder(order);
 });
 

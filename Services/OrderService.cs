@@ -11,7 +11,7 @@ public class OrderService(IHubContext<OrderNotificationHub, IOrderNotificationCl
     private readonly ConcurrentDictionary<int, Order> _orders = new(
         new[]
         {
-            new Order(1,"User A", "Product 1",OrderStatusEnum.Pending,DateTimeOffset.UtcNow),
+            new Order(1,"User A", "Order 1",OrderStatusEnum.Pending,DateTimeOffset.UtcNow),
             new Order(2,"User B", "Order 2",OrderStatusEnum.Shipped,DateTimeOffset.UtcNow),
             new Order(3,"User C", "Order 3",OrderStatusEnum.Delivered,DateTimeOffset.UtcNow)
         }.ToDictionary(o => o.Id));

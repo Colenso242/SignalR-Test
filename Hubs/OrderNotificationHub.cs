@@ -6,6 +6,7 @@ using TestSignalR.Services;
 
 namespace TestSignalR.Hubs;
 
+[Authorize]
 public class OrderNotificationHub(IOrderService orderService, ILogger<OrderNotificationHub> logger) : Hub<IOrderNotificationClient>
 {
     public static string OrderGroup(int orderId) => $"Order-{orderId}";
