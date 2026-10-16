@@ -6,7 +6,7 @@ namespace TestSignalR.Pages;
 
 public class IndexModel : PageModel
 {
-    public ConnectionPanelViewModel Connection { get; } = new("User A");
+    public ConnectionPanelViewModel Connection { get; } = new("alice");
     public GroupPanelViewModel Group { get; } = new(3);
 
     // Built from the enum so the dropdown can never offer a value the server can't deserialize.

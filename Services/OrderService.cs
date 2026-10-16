@@ -11,9 +11,9 @@ public class OrderService(IHubContext<OrderNotificationHub, IOrderNotificationCl
     private readonly ConcurrentDictionary<int, Order> _orders = new(
         new[]
         {
-            new Order(1,"User A", "Order 1",OrderStatusEnum.Pending,DateTimeOffset.UtcNow),
-            new Order(2,"User B", "Order 2",OrderStatusEnum.Shipped,DateTimeOffset.UtcNow),
-            new Order(3,"User C", "Order 3",OrderStatusEnum.Delivered,DateTimeOffset.UtcNow)
+            new Order(1, "alice", "Mechanical keyboard", OrderStatusEnum.Placed, DateTimeOffset.UtcNow),
+            new Order(2, "alice", "USB-C dock", OrderStatusEnum.Placed, DateTimeOffset.UtcNow),
+            new Order(3, "bob", "27\" monitor", OrderStatusEnum.Placed, DateTimeOffset.UtcNow),
         }.ToDictionary(o => o.Id));
     public IReadOnlyList<Order> GetAll() => _orders.OrderBy(o => o.Key).Select(o => o.Value).ToList();
 

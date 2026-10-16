@@ -69,12 +69,6 @@ app.MapControllerRoute(
     .WithStaticAssets();
 app.MapRazorPages()
     .WithStaticAssets();
-app.UseStaticFiles();
-
-app.UseEndpoints(endpoints =>
-{
-    endpoints.MapHub<OrderNotificationHub>("/orderNotification");
-});
-
+app.MapHub<OrderNotificationHub>("/orderNotification");
 
 app.Run();
