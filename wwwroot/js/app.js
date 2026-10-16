@@ -16,9 +16,7 @@ function setStatus(text) {
     const connected = text === 'Connected';
     $('startBtn').disabled = connection !== null;
     $('stopBtn').disabled = connection === null;
-    for (const id of ['joinBtn', 'leaveBtn', 'invokeBtn']) $(id).disabled = !connected;
-    // REST update is not wired up yet (no PUT endpoint on the server)
-    $('restBtn').disabled = true;
+    for (const id of ['joinBtn', 'leaveBtn', 'invokeBtn', 'restBtn']) $(id).disabled = !connected;
 }
 
 function renderOrders(highlightId) {
@@ -141,6 +139,17 @@ $('invokeBtn').onclick = () => run(async () => {
         status: $('newStatus').value,
     });
     log(`Updated #${order.id} → ${order.status}`);
+    upsertOrder(order);
+});
+
+$('restBtn').onclick = () => run(async () => {
+    //PUT normale: la notifica SignalR arriva comunque da OrderService tramite IHubContext
+    const order = await fetchJson(`/api/orders/${Number($('updateOrderId').value)}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: $('newStatus').value }),
+    });
+    log(`Updated via REST #${order.id} → ${order.status}`);
     upsertOrder(order);
 });
 
